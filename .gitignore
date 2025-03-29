@@ -1,0 +1,5 @@
+# Ignore all .pth files
+*.pth
+
+# Ignore .env file
+.env
