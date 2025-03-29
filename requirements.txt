@@ -1,0 +1,15 @@
+langchain-community
+unstructured
+pymongo
+sentence-transformers
+beautifulsoup4
+rank-bm25
+langchain-ollama
+torch
+transformers
+streamlit
+python-dotenv
+numpy
+requests
+torchvision
+streamlit
