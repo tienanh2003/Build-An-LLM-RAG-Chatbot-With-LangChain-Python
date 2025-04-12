@@ -205,7 +205,7 @@ function renderMessages() {
 
       const p = document.createElement("p");
       p.style.margin = "0";
-      p.textContent = msg.content;
+      p.innerHTML = msg.content;
       textWrapper.appendChild(p);
 
       bubbleDiv.appendChild(textWrapper);
