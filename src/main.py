@@ -20,6 +20,9 @@ from flask_session import Session
 # Cập nhật theo khuyến nghị
 from langchain_community.document_loaders import UnstructuredURLLoader
 from langchain_community.embeddings import OpenAIEmbeddings
+from langchain.tools import BaseTool
+from langchain.agents import initialize_agent, AgentType
+from langchain.llms import OpenAI
 import openai
 
 
@@ -60,6 +63,36 @@ collection = db[MONGODB_COLLECTION_NAME]
 device_local = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 classification_model = ClassificationModelLoader("model_multiclass.pth", NUM_CLASSES, device_local).load_weights()
 segmentation_model = SegmentationModelLoader("model_segmentation.pth", device_local).load_weights()
+
+class MedicalImageTool(BaseTool):
+    """Tool để xử lý ảnh y học: phân loại và phân đoạn.
+       Input: chuỗi ảnh base64.
+       Output: chuỗi kết quả, bao gồm nhãn phân loại và ảnh segmentation (dưới dạng data URI HTML).
+    """
+    name = "MedicalImageTool"
+    description = "Nhận input là chuỗi base64 của ảnh y học và trả về kết quả phân loại và ảnh segmentation."
+
+    def _run(self, image_data: str) -> str:
+        # Lấy kết quả phân loại
+        classification = get_classification_result(image_data, classification_model, device_local)
+        # Lấy kết quả segmentation (dưới dạng data URI)
+        segmentation_data_uri = get_segmentation_image(image_data, segmentation_model, device_local)
+        segmentation_html = (
+            f"<br><b>Segmentation Result:</b><br><img src='{segmentation_data_uri}' alt='Segmentation Result' style='max-width:300px;'/>"
+            if segmentation_data_uri else ""
+        )
+        return f"Classification: {classification}.{segmentation_html}"
+
+    async def _arun(self, image_data: str) -> str:
+        raise NotImplementedError("Async không được hỗ trợ trong tool này.")
+    
+# Khởi tạo LLM từ OpenAI (bạn cần API key đã được cài đặt trong môi trường)
+llm = OpenAI(temperature=0, model_name="gpt-3.5-turbo")
+# Đăng ký tool vừa tạo
+tools = [MedicalImageTool()]
+# Khởi tạo agent với kiểu ZERO_SHOT_REACT_DESCRIPTION (agent sẽ tự quyết định khi nào gọi tool)
+agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True)
+
 
 # Khởi tạo agent: Agent này tích hợp các tool (như classification, segmentation, BCLIP embedding)
 # để hỗ trợ xử lý input phức tạp (ví dụ, khi người dùng gửi ảnh kèm theo text).
@@ -255,15 +288,26 @@ def get_classification_result(image_data: str) -> str:
         disease_vn = vietnamese_labels.get(pred, "Không xác định")
         return disease_vn
 
-def get_segmentation_result(image_data: str) -> str:
+def get_segmentation_image(image_data: str) -> str:
+    """
+    Xử lý ảnh đầu vào, chạy qua model segmentation, chuyển kết quả mask thành ảnh (base64)
+    và trả về chuỗi data URI để hiển thị.
+    """
     image_tensor = process_image(image_data)
     if image_tensor is None:
-        return "No image"
+        return ""
     with torch.no_grad():
         output = segmentation_model(image_tensor.to(device_local))
-        # Giả sử tính trung bình của mask làm ví dụ
-        mean_val = output.mean().item()
-        return f"Segmentation_mean: {mean_val:.2f}"
+        # Giả sử output là tensor mask có shape [1, H, W]
+        mask = output.squeeze().cpu().numpy()
+        # Chuẩn hóa mask về khoảng [0, 255]
+        mask = (mask - mask.min()) / (mask.max() - mask.min() + 1e-9) * 255
+        mask = mask.astype(np.uint8)
+        mask_img = Image.fromarray(mask)
+        buffered = io.BytesIO()
+        mask_img.save(buffered, format="PNG")
+        mask_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        return "data:image/png;base64," + mask_base64
     
 # --------------------------
 # Pipeline chính: Xử lý câu hỏi, tính embedding, so sánh với mẫu, truy vấn MongoDB và trả lời
