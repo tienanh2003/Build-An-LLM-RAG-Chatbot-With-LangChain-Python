@@ -203,3 +203,16 @@ html, body {
     display: block;
   }
   
+  .model-selector {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .model-selector label {
+    margin-right: 10px;
+  }
+  
+  #modelSelect {
+    width: 150px;
+  }

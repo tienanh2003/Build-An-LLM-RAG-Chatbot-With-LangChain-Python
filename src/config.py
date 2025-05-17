@@ -8,6 +8,8 @@ load_dotenv()
 MONGODB_CONNECTION_STRING = os.getenv("MONGODB_CONNECTION_STRING")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+URL_NGROK = os.getenv("URL_NGROK")
 
 # Các biến cấu hình khác có thể đặt mặc định nếu không có trong .env
 MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "rag_database")

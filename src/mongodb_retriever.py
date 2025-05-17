@@ -43,11 +43,34 @@ class MongoDBRAGRetriever:
     def close(self):
         self.client.close()
 
+# def get_query_results(query_embedding, collection, limit):
+#     """
+#     Thực hiện truy vấn vector trên collection sử dụng chỉ mục "vector_index".
+#     (Lưu ý: Cần cấu hình index vector trong MongoDB để hàm này hoạt động)
+#     """
+#     pipeline_vector = [
+#         {
+#             "$vectorSearch": {
+#                 "index": "vector_index",
+#                 "queryVector": query_embedding,
+#                 "path": "embedding",
+#                 "exact": True,
+#                 "limit": limit
+#             }
+#         },
+#         {
+#             "$project": {
+#                 "_id": 0,
+#                 "url": 1,
+#                 "page_content": 1,
+#                 "score": {"$meta": "searchScore"}
+#             }
+#         }
+#     ]
+#     results_cursor = collection.aggregate(pipeline_vector)
+#     results = [doc for doc in results_cursor]
+#     return results
 def get_query_results(query_embedding, collection, limit):
-    """
-    Thực hiện truy vấn vector trên collection sử dụng chỉ mục "vector_index".
-    (Lưu ý: Cần cấu hình index vector trong MongoDB để hàm này hoạt động)
-    """
     pipeline_vector = [
         {
             "$vectorSearch": {
@@ -63,13 +86,14 @@ def get_query_results(query_embedding, collection, limit):
                 "_id": 0,
                 "url": 1,
                 "page_content": 1,
-                "score": {"$meta": "searchScore"}
+                "score": {"$meta": "searchScore"},
+                "embedding": 1        # <-- Thêm trường này
             }
         }
     ]
     results_cursor = collection.aggregate(pipeline_vector)
-    results = [doc for doc in results_cursor]
-    return results
+    return [doc for doc in results_cursor]
+
 
 def ingest_urls_to_mongo(urls, connection_string, db_name, collection_name):
     """

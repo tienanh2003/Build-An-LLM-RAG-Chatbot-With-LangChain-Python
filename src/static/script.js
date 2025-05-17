@@ -4,6 +4,7 @@
 let chatData = [];
 let currentChatId = null;
 let pendingImages = [];
+let currentModel = 'gpt-4';
 
 /**********************
  * COOKIE: Lưu & Tải dữ liệu
@@ -251,9 +252,21 @@ function handleImagePreview(base64Data) {
   renderPreviewImages();
 }
 
-/**********************
- * GỬI TIN NHẮN
- **********************/
+// Lắng nghe sự kiện thay đổi mô hình ngôn ngữ
+document.getElementById("modelSelect").addEventListener("change", (event) => {
+  const selectedModel = event.target.value;
+  updateModel(selectedModel);
+});
+
+// Hàm cập nhật mô hình
+function updateModel(model) {
+  // Bạn có thể sử dụng biến này khi gửi yêu cầu đến server
+  console.log("Mô hình ngôn ngữ đã được thay đổi sang: " + model);
+  // Giả sử bạn muốn sử dụng mô hình khi gửi dữ liệu:
+  currentModel = model; 
+}
+
+// Ví dụ về việc gửi mô hình trong payload
 function sendMessage() {
   const inputEl = document.getElementById("chatInput");
   const text = inputEl.value.trim();
@@ -267,7 +280,8 @@ function sendMessage() {
     role: "user",
     content: text,
     images: [...pendingImages],
-    time: timeNow
+    time: timeNow,
+    model: currentModel // Gửi mô hình đã chọn
   };
 
   chatBox.messages.push(userMessage);
@@ -279,7 +293,8 @@ function sendMessage() {
 
   const payload = {
     user_input: text,
-    images: userMessage.images
+    images: userMessage.images,
+    model: currentModel 
   };
 
   fetch('/', {

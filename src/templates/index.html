@@ -21,6 +21,16 @@
   </div>
   <!-- CHAT AREA -->
   <div class="chat-area">
+    <!-- Thêm dropdown để chọn model -->
+    <div class="model-selector">
+      <label for="modelSelect">Chọn mô hình:</label>
+      <select id="modelSelect" class="form-select">
+        <option value="gpt-4">GPT-4</option>
+        <option value="olaama">Ollama</option>
+        <option value="gemini">Gemini</option>
+      </select>
+    </div>
+
     <div class="chat-messages" id="chatMessages">
       <!-- Tin nhắn sẽ render ở đây -->
     </div>
